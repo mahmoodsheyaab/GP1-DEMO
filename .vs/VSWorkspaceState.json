@@ -1,7 +1,9 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\.github",
+    "\\.github\\workflows"
   ],
-  "SelectedNode": "\\package.json",
+  "SelectedNode": "\\.github\\workflows\\ci-cd.yml",
   "PreviewInSolutionExplorer": false
 }

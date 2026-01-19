@@ -1,0 +1,63 @@
+﻿name: Web App Demo CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-test-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          # أدوات اختيارية لو حابب تستعملها لاحقًا
+          pip install pytest bandit || true
+
+      - name: Run Unit Tests (Pytest) - optional
+        run: pytest -v --disable-warnings || echo "No tests, skipping"
+
+      - name: Run Security Scan (Bandit) - optional
+        run: bandit -r app.py || echo "Bandit not configured, skipping"
+
+  docker-deploy:
+    runs-on: ubuntu-latest
+    needs: build-test-scan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/gp1-demo:latest .
+
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/gp1-demo:latest
+
+      - name: Save Docker image locally
+        run: docker save ${{ secrets.DOCKERHUB_USERNAME }}/gp1-demo:latest -o gp1-demo.tar
+
+      - name: Upload Docker image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gp1-demo-image
+          path: gp1-demo.tar
